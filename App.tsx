@@ -32,6 +32,7 @@ import RejectRequestModal from './components/RejectRequestModal';
 import ViewOnlyItemDetailsModal from './components/ViewOnlyItemDetailsModal';
 import LoginScreen from './components/LoginScreen';
 import LoggedOutScreen from './components/LoggedOutScreen';
+import { testFirestoreConnection } from './services/firebase';
 
 
 type AppView = 'home' | 'swiping' | 'chat' | 'account' | 'my-items' | 'history' | 'item-details' | 'match-details' | 'edit-profile' | 'edit-item' | 'liked-items' | 'liked-item-details' | 'requests' | 'request-details' | 'ongoing-transactions' | 'transaction-details' | 'logged-out';
@@ -98,6 +99,19 @@ const App: React.FC = () => {
       setRequests(INITIAL_REQUESTS);
       setTransactions(INITIAL_TRANSACTIONS);
   }
+
+  // 開發時自動測試 Firestore 連線（只在非 production 執行）
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      (async () => {
+        try {
+          await testFirestoreConnection('test');
+        } catch (e) {
+          console.warn('[App] Firestore test connection error', e);
+        }
+      })();
+    }
+  }, []);
 
   const handleLogin = (userInfo: { name: string, email: string, picture: string }) => {
     const newUser: User = {
