@@ -35,7 +35,10 @@
       "FIREBASE_STORAGE_BUCKET": "stylemate-e534e.firebasestorage.app",
       "FIREBASE_MESSAGING_SENDER_ID": "903619554394",
       "FIREBASE_APP_ID": "1:903619554394:web:ce1fa8871bf1fe6e52bc63",
-      "FIREBASE_MEASUREMENT_ID": "G-SGYZSQ7V0B"
+      "FIREBASE_MEASUREMENT_ID": "G-SGYZSQ7V0B",
+      "GOOGLE_WEB_CLIENT_ID": "903619554394-khaak47vjhrbegl3brq51vgojsjuvbni.apps.googleusercontent.com",
+      "GOOGLE_ANDROID_CLIENT_ID": "903619554394-7j4lqb0ado7uiapp070g6v0lslrao29i.apps.googleusercontent.com",
+      "GOOGLE_IOS_CLIENT_ID": ""
     },
     "plugins": [
       "expo-web-browser",

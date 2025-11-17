@@ -3,6 +3,7 @@
 import Constants from 'expo-constants';
 import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // 先嘗試從 Expo 的 manifest.extra 讀取（適用於本機與 EAS 環境）
 const expoExtra: Record<string, any> = (Constants.manifest && (Constants.manifest as any).extra) || (Constants.expoConfig && (Constants.expoConfig as any).extra) || {};
@@ -30,6 +31,7 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // 簡單的 Firestore helper 範例
 export async function getCollectionDocs(collectionName: string) {
@@ -50,6 +52,7 @@ export async function setDocWithId(collectionName: string, id: string, data: Rec
 }
 
 export { db };
+export { auth };
 
 // Debug helper: 測試是否能連上 Firestore 並讀取指定 collection 的前幾筆文件
 export async function testFirestoreConnection(collectionName = 'test') {
@@ -60,85 +63,6 @@ export async function testFirestoreConnection(collectionName = 'test') {
     return { ok: true, docs };
   } catch (err) {
     console.error('[firebase] Firestore test read failed:', err);
-    return { ok: false, error: err };
-  }
-}
-
-// 上傳 fixtures（測試資料）到 Firestore（只供開發環境使用）
-export async function uploadFixtures(fixtures: Record<string, any>) {
-  const results: Record<string, any> = {};
-  try {
-    // items / deck
-    if (Array.isArray(fixtures.INITIAL_DECK)) {
-      results.items = [];
-      for (const item of fixtures.INITIAL_DECK) {
-        await setDocWithId('items', item.id, item);
-        results.items.push(item.id);
-      }
-    }
-
-    // closet
-    if (Array.isArray(fixtures.MY_CLOSET)) {
-      results.closet = [];
-      for (const item of fixtures.MY_CLOSET) {
-        await setDocWithId('closet', item.id, item);
-        results.closet.push(item.id);
-      }
-    }
-
-    // matches
-    if (Array.isArray(fixtures.INITIAL_MATCHES)) {
-      results.matches = [];
-      for (const m of fixtures.INITIAL_MATCHES) {
-        await setDocWithId('matches', m.id, m);
-        results.matches.push(m.id);
-      }
-    }
-
-    // transactions
-    if (Array.isArray(fixtures.INITIAL_TRANSACTIONS)) {
-      results.transactions = [];
-      for (const t of fixtures.INITIAL_TRANSACTIONS) {
-        await setDocWithId('transactions', t.id, t);
-        results.transactions.push(t.id);
-      }
-    }
-
-    // liked items
-    if (Array.isArray(fixtures.INITIAL_LIKED_ITEMS)) {
-      results.likedItems = [];
-      for (const l of fixtures.INITIAL_LIKED_ITEMS) {
-        await setDocWithId('likedItems', l.id, l);
-        results.likedItems.push(l.id);
-      }
-    }
-
-    // requests
-    if (Array.isArray(fixtures.INITIAL_REQUESTS)) {
-      results.requests = [];
-      for (const r of fixtures.INITIAL_REQUESTS) {
-        await setDocWithId('requests', r.id, r);
-        results.requests.push(r.id);
-      }
-    }
-
-    // users (MOCK_USER)
-    if (fixtures.MOCK_USER) {
-      const u = fixtures.MOCK_USER;
-      await setDocWithId('users', u.id, u);
-      results.user = u.id;
-    }
-
-    // avatars
-    if (Array.isArray(fixtures.AVATAR_OPTIONS)) {
-      await setDocWithId('meta', 'avatars', { avatars: fixtures.AVATAR_OPTIONS });
-      results.avatars = fixtures.AVATAR_OPTIONS.length;
-    }
-
-    console.log('[firebase] uploadFixtures completed', results);
-    return { ok: true, results };
-  } catch (err) {
-    console.error('[firebase] uploadFixtures error', err);
     return { ok: false, error: err };
   }
 }
