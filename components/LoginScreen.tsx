@@ -1,34 +1,78 @@
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { SparklesIcon, GoogleIcon } from './Icons';
-// For React Native, you need a native Google Sign-In library.
-// The web-based `google.accounts.id` will not work.
-// A popular choice is `@react-native-google-signin/google-signin`.
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { SparklesIcon } from './Icons';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseAuthUser } from 'firebase/auth';
+import { auth } from '../services/firebase';
 
 interface LoginScreenProps {
-  onLogin: (userInfo: { name: string; email: string; picture: string }) => void;
+  onLogin: (user: FirebaseAuthUser) => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    // This function should contain the logic from `@react-native-google-signin/google-signin`
+  const toggleMode = () => {
+    setMode(prev => (prev === 'login' ? 'register' : 'login'));
+    setName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert('提醒', '請輸入 Email 與密碼。');
+      return;
+    }
+
+    if (mode === 'register') {
+      if (!name.trim()) {
+        Alert.alert('提醒', '請輸入顯示名稱。');
+        return;
+      }
+      if (password.length < 6) {
+        Alert.alert('提醒', '密碼至少需 6 碼。');
+        return;
+      }
+      if (password !== confirmPassword) {
+        Alert.alert('提醒', '兩次輸入的密碼不一致。');
+        return;
+      }
+    }
+
     try {
-      // await GoogleSignin.hasPlayServices();
-      // const userInfo = await GoogleSignin.signIn();
-      // onLogin(userInfo.user); // The user object structure might differ slightly
-      
-      // Placeholder for demonstration:
-      Alert.alert(
-        "Google Sign-In",
-        "This requires a native library like @react-native-google-signin/google-signin to be installed and configured."
-      );
-      // Mock login for development
-      onLogin({ name: 'VibeSeeker', email: 'vibeseeker@email.com', picture: 'https://picsum.photos/seed/me/100/100'});
-
-    } catch (error) {
-      console.error(error);
+      setIsSubmitting(true);
+      if (mode === 'register') {
+        const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        if (name.trim()) {
+          await updateProfile(userCredential.user, { displayName: name.trim() });
+        }
+        onLogin(userCredential.user);
+      } else {
+        const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+        onLogin(userCredential.user);
+      }
+    } catch (error: any) {
+      console.error('[LoginScreen] auth error', error);
+      let message = '請稍後再試。';
+      if (error.code === 'auth/email-already-in-use') {
+        message = '此 Email 已被使用，請改用登入或其他 Email。';
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        message = 'Email 或密碼錯誤。';
+      } else if (error.code === 'auth/user-not-found') {
+        message = '沒有此帳號，請先註冊。';
+      } else if (error.code === 'auth/weak-password') {
+        message = '密碼安全性不足，請至少 6 碼。';
+      }
+      Alert.alert('登入失敗', message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -39,10 +83,59 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
         <Text style={styles.title}>Stylemate</Text>
       </View>
       <Text style={styles.subtitle}>交換您的風格，找到您的 Style。</Text>
-      
-      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
-        <GoogleIcon width={24} height={24} style={styles.googleIcon} />
-        <Text style={styles.googleButtonText}>Sign in with Google</Text>
+
+      {mode === 'register' && (
+        <TextInput
+          style={styles.input}
+          placeholder="顯示名稱"
+          placeholderTextColor="#6B7280"
+          value={name}
+          onChangeText={setName}
+        />
+      )}
+
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#6B7280"
+        autoCapitalize="none"
+        keyboardType="email-address"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="密碼"
+        placeholderTextColor="#6B7280"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      {mode === 'register' && (
+        <TextInput
+          style={styles.input}
+          placeholder="再次輸入密碼"
+          placeholderTextColor="#6B7280"
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+      )}
+
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isSubmitting}>
+        {isSubmitting ? (
+          <ActivityIndicator color="#111827" />
+        ) : (
+          <Text style={styles.submitButtonText}>{mode === 'login' ? '登入' : '建立帳號'}</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={toggleMode} disabled={isSubmitting}>
+        <Text style={styles.toggleText}>
+          {mode === 'login' ? '還沒有帳號？立即註冊' : '已經有帳號？返回登入'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -76,24 +169,40 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     maxWidth: 250,
     textAlign: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
   },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
+  input: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#1F2937',
+    color: '#F9FAFB',
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#374151',
   },
-  googleIcon: {
-    marginRight: 24,
+  submitButton: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: 'white',
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginTop: 12,
+    marginBottom: 16,
+    alignItems: 'center',
   },
-  googleButtonText: {
+  submitButtonText: {
     fontFamily: 'Poppins-Bold',
     color: '#374151',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  toggleText: {
+    color: '#F472B6',
+    fontFamily: 'Poppins-Regular',
+    marginTop: 4,
   },
 });
 

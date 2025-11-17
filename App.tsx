@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, StatusBar } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { StyleSheet, View, StatusBar, ActivityIndicator, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ClothingItem, Match, User, LikedItem, Request, Transaction, TransactionPartyDetails } from './types';
-import { INITIAL_DECK, MY_CLOSET, INITIAL_MATCHES, MOCK_USER, INITIAL_LIKED_ITEMS, INITIAL_REQUESTS, INITIAL_TRANSACTIONS, AVATAR_OPTIONS } from './constants';
+import { INITIAL_DECK, AVATAR_OPTIONS } from './constants';
 import Header from './components/Header';
 import HomeScreen from './components/HomeScreen';
 import SwipingScreen from './components/SwipingScreen';
@@ -32,13 +32,17 @@ import RejectRequestModal from './components/RejectRequestModal';
 import ViewOnlyItemDetailsModal from './components/ViewOnlyItemDetailsModal';
 import LoginScreen from './components/LoginScreen';
 import LoggedOutScreen from './components/LoggedOutScreen';
-import { testFirestoreConnection } from './services/firebase';
+import { auth, testFirestoreConnection, ensureUserDocument } from './services/firebase';
+import { getUserAppState, saveUserAppState, UserAppStatePayload, getUserProfile, saveUserProfile } from './services/userData';
+import { Timestamp } from 'firebase/firestore';
+import { onAuthStateChanged, User as FirebaseAuthUser, signOut } from 'firebase/auth';
 
 
 type AppView = 'home' | 'swiping' | 'chat' | 'account' | 'my-items' | 'history' | 'item-details' | 'match-details' | 'edit-profile' | 'edit-item' | 'liked-items' | 'liked-item-details' | 'requests' | 'request-details' | 'ongoing-transactions' | 'transaction-details' | 'logged-out';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authInitializing, setAuthInitializing] = useState(true);
   const [view, setView] = useState<AppView>('home');
   const [deck, setDeck] = useState<ClothingItem[]>([]);
   const [myCloset, setMyCloset] = useState<ClothingItem[]>([]);
@@ -66,39 +70,145 @@ const App: React.FC = () => {
   const [swapProposal, setSwapProposal] = useState<{ myItem: ClothingItem, theirItem: ClothingItem } | null>(null);
 
   const [showTransactionForm, setShowTransactionForm] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeTransaction, setActiveTransaction] = useState<Transaction | null>(null);
   const [showRejectRequestModal, setShowRejectRequestModal] = useState(false);
   const [viewOnlyItem, setViewOnlyItem] = useState<ClothingItem | null>(null);
+  const [isUserDataLoading, setIsUserDataLoading] = useState(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const initializeDataForUser = (user: User) => {
-      const updatedMyCloset = MY_CLOSET.map(item => ({
-        ...item,
-        userId: user.id,
-        userName: user.name,
-        userAvatar: user.avatar,
-      }));
-      setMyCloset(updatedMyCloset);
+  const applyUserAppState = useCallback((state: Partial<UserAppStatePayload>) => {
+    setMyCloset(state.myCloset ?? []);
+    setMatches(state.matches ?? []);
+    setLikedItems(state.likedItems ?? []);
+    setRequests(state.requests ?? []);
+    setTransactions(state.transactions ?? []);
+    setSeenItemIds(new Set(state.seenItemIds ?? []));
+  }, []);
 
-      const updatedMatches = INITIAL_MATCHES.map(match => {
-        if (match.user1.userId === 'user-1') { 
+  const buildInitialUserAppState = useCallback((user: User): UserAppStatePayload => {
           return {
-            ...match,
-            user1: {
-              userId: user.id,
-              clothingItem: {
-                ...updatedMyCloset.find(i => i.id === match.user1.clothingItem.id)!,
-              }
-            }
-          };
-        }
-        return match;
-      });
-      setMatches(updatedMatches);
-      setLikedItems(INITIAL_LIKED_ITEMS);
-      setRequests(INITIAL_REQUESTS);
-      setTransactions(INITIAL_TRANSACTIONS);
-  }
+      myCloset: [],
+      matches: [],
+      likedItems: [],
+      requests: [],
+      transactions: [],
+      seenItemIds: [],
+    };
+  }, []);
+
+  const initializeDataForUser = useCallback(async (user: User) => {
+    setIsUserDataLoading(true);
+    try {
+      const remoteState = await getUserAppState(user.id);
+      if (remoteState) {
+        applyUserAppState(remoteState);
+      } else {
+        const initialState = buildInitialUserAppState(user);
+        applyUserAppState(initialState);
+        await saveUserAppState(user.id, initialState);
+      }
+    } catch (error) {
+      console.warn('[App] Failed to load user data, fallback to defaults', error);
+      const fallbackState = buildInitialUserAppState(user);
+      applyUserAppState(fallbackState);
+    } finally {
+      setIsUserDataLoading(false);
+    }
+  }, [applyUserAppState, buildInitialUserAppState]);
+
+  const resetAppState = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    setDeck([]);
+    setActiveCardIndex(0);
+    setSwipedDirection(null);
+    setLatestMatch(null);
+    setActiveChatMatch(null);
+    setShowUploadModal(false);
+    setIsSidebarOpen(false);
+    setShowLogoutModal(false);
+    setActiveItem(null);
+    setActiveMatch(null);
+    setSeenItemIds(new Set());
+    setMyCloset([]);
+    setMatches([]);
+    setLikedItems([]);
+    setRequests([]);
+    setTransactions([]);
+    setActiveRequest(null);
+    setActiveLikedItem(null);
+    setSwapProposal(null);
+    setShowTransactionForm(false);
+    setActiveTransaction(null);
+    setShowDeleteItemModal(false);
+    setShowRejectRequestModal(false);
+    setViewOnlyItem(null);
+    setView('home');
+    setIsUserDataLoading(false);
+  }, []);
+
+  const navigateTo = useCallback((newView: AppView) => {
+    setView(newView);
+    setIsSidebarOpen(false);
+    setActiveChatMatch(null);
+    if (newView !== 'item-details' && newView !== 'edit-item') setActiveItem(null);
+    if (newView !== 'match-details') setActiveMatch(null);
+    if (newView !== 'liked-item-details') setActiveLikedItem(null);
+    if (newView !== 'request-details') setActiveRequest(null);
+    if (newView !== 'transaction-details') setActiveTransaction(null);
+  }, []);
+
+  const handleLogin = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+    if (!firebaseUser) return;
+    if (currentUser?.id === firebaseUser.uid) {
+      setIsLoggedIn(true);
+      return;
+    }
+
+    const displayName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Stylemate User';
+    const userDoc = await ensureUserDocument(firebaseUser).catch(err => {
+      console.warn('[App] ensureUserDocument error', err);
+      return null;
+    });
+    const storedProfile = await getUserProfile(firebaseUser.uid);
+    const createdAtTimestamp = (storedProfile as any)?.createdAt || userDoc?.data()?.createdAt;
+    const joinDate =
+      storedProfile?.joinDate ||
+      (createdAtTimestamp instanceof Timestamp
+        ? createdAtTimestamp.toDate().toISOString().split('T')[0]
+        : '2024-07-01');
+    const newUser: User = {
+        id: firebaseUser.uid,
+        name: storedProfile?.name || displayName,
+        username: storedProfile?.username || `@${displayName.toLowerCase().replace(/\s/g, '')}`,
+        avatar: firebaseUser.photoURL || storedProfile?.avatar || AVATAR_OPTIONS[0],
+        email: storedProfile?.email || firebaseUser.email || '',
+        joinDate,
+        phoneNumber: storedProfile?.phoneNumber || firebaseUser.phoneNumber || '',
+    };
+    setCurrentUser(newUser);
+    setIsLoggedIn(true);
+    await initializeDataForUser(newUser);
+    navigateTo('home');
+  }, [currentUser?.id, initializeDataForUser, navigateTo]);
+
+  // Firebase Auth 狀態監聽
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      if (user) {
+        handleLogin(user).finally(() => setAuthInitializing(false));
+      } else {
+        resetAppState();
+        setAuthInitializing(false);
+      }
+    });
+    return unsubscribe;
+  }, [handleLogin, resetAppState]);
 
   // 開發時自動測試 Firestore 連線（只在非 production 執行）
   useEffect(() => {
@@ -113,21 +223,30 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = (userInfo: { name: string, email: string, picture: string }) => {
-    const newUser: User = {
-        id: 'user-1',
-        name: userInfo.name,
-        username: `@${userInfo.name.toLowerCase().replace(/\s/g, '')}`,
-        avatar: userInfo.picture || AVATAR_OPTIONS[0],
-        email: userInfo.email,
-        joinDate: '2024年7月',
-        phoneNumber: '0912345678',
+  useEffect(() => {
+    if (!currentUser || isUserDataLoading) return;
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    const payload: UserAppStatePayload = {
+      myCloset,
+      matches,
+      likedItems,
+      requests,
+      transactions,
+      seenItemIds: Array.from(seenItemIds),
     };
-    setCurrentUser(newUser);
-    initializeDataForUser(newUser);
-    setIsLoggedIn(true);
-    navigateTo('home');
-  };
+    saveTimeoutRef.current = setTimeout(() => {
+      saveUserAppState(currentUser.id, payload).catch(err => console.warn('[App] Failed to save user data', err));
+    }, 800);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
+  }, [currentUser, isUserDataLoading, myCloset, matches, likedItems, requests, transactions, seenItemIds]);
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentUser) return;
@@ -168,17 +287,6 @@ const App: React.FC = () => {
       setSwipedDirection(null);
     }, 500);
   };
-  
-  const navigateTo = (newView: AppView) => {
-    setView(newView);
-    setIsSidebarOpen(false);
-    setActiveChatMatch(null);
-    if (newView !== 'item-details' && newView !== 'edit-item') setActiveItem(null);
-    if (newView !== 'match-details') setActiveMatch(null);
-    if (newView !== 'liked-item-details') setActiveLikedItem(null);
-    if (newView !== 'request-details') setActiveRequest(null);
-    if (newView !== 'transaction-details') setActiveTransaction(null);
-  }
 
   const startSwiping = () => {
     const filteredDeck = INITIAL_DECK.filter(item => !seenItemIds.has(item.id) && item.userId !== currentUser?.id);
@@ -246,17 +354,14 @@ const App: React.FC = () => {
       setShowLogoutModal(true);
   }
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
       setShowLogoutModal(false);
-      setIsLoggedIn(false);
-      setCurrentUser(null);
-      setSeenItemIds(new Set());
-      setMyCloset([]);
-      setMatches([]);
-      setLikedItems([]);
-      setRequests([]);
-      setTransactions([]);
-      setView('home');
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.warn('[App] signOut error', error);
+        resetAppState();
+      }
   }
 
   const handleInitiateTransaction = () => {
@@ -318,6 +423,7 @@ const App: React.FC = () => {
 
   const handleUpdateProfile = (updatedUser: User) => {
     setCurrentUser(updatedUser);
+    saveUserProfile(updatedUser).catch(err => console.warn('[App] Failed to save user profile', err));
     navigateTo('account');
   };
 
@@ -521,6 +627,17 @@ const App: React.FC = () => {
   const renderMainApp = () => {
     if (!currentUser) return null;
 
+    if (isUserDataLoading) {
+      return (
+        <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#F472B6" />
+            <Text style={styles.loadingText}>同步您的資料中...</Text>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     if (view === 'logged-out') {
       return <LoggedOutScreen onLogin={() => setIsLoggedIn(false)} />;
     }
@@ -563,7 +680,7 @@ const App: React.FC = () => {
     <SafeAreaProvider>
         <StatusBar barStyle="light-content" />
         <View style={styles.screen}>
-          {isLoggedIn ? renderMainApp() : <LoginScreen onLogin={handleLogin} />}
+          {isLoggedIn ? renderMainApp() : (!authInitializing && <LoginScreen onLogin={handleLogin} />)}
         </View>
     </SafeAreaProvider>
   );
@@ -577,6 +694,16 @@ const styles = StyleSheet.create({
     main: {
         flex: 1,
         position: 'relative',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        rowGap: 16,
+    },
+    loadingText: {
+        color: '#D1D5DB',
+        fontSize: 16,
     }
 });
 

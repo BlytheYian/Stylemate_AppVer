@@ -2,8 +2,8 @@
 // 建議不要把金鑰直接放在程式碼並提交到版本控制，請改用 `app.json`/`app.config.js` 的 `expo.extra`、EAS secrets，或其他安全方式。
 import Constants from 'expo-constants';
 import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getAuth, User as FirebaseAuthUser } from 'firebase/auth';
 
 // 先嘗試從 Expo 的 manifest.extra 讀取（適用於本機與 EAS 環境）
 const expoExtra: Record<string, any> = (Constants.manifest && (Constants.manifest as any).extra) || (Constants.expoConfig && (Constants.expoConfig as any).extra) || {};
@@ -53,6 +53,25 @@ export async function setDocWithId(collectionName: string, id: string, data: Rec
 
 export { db };
 export { auth };
+
+export async function ensureUserDocument(user: FirebaseAuthUser) {
+  if (!user?.uid) return;
+  const userRef = doc(db, 'users', user.uid);
+  const existing = await getDoc(userRef);
+  const baseData = {
+    displayName: user.displayName || null,
+    email: user.email || null,
+    avatar: user.photoURL || null,
+    phoneNumber: user.phoneNumber || null,
+    lastLoginAt: serverTimestamp(),
+  };
+  if (existing.exists()) {
+    await setDoc(userRef, baseData, { merge: true });
+    return existing;
+  }
+  await setDoc(userRef, { ...baseData, createdAt: serverTimestamp(), provider: user.providerData?.[0]?.providerId ?? 'password' }, { merge: true });
+  return await getDoc(userRef);
+}
 
 // Debug helper: 測試是否能連上 Firestore 並讀取指定 collection 的前幾筆文件
 export async function testFirestoreConnection(collectionName = 'test') {

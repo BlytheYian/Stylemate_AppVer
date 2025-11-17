@@ -1,4 +1,4 @@
-package com.anonymous.StylemateApp
+package Style.mate
 
 import android.os.Build
 import android.os.Bundle

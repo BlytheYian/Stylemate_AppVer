@@ -9,39 +9,16 @@ export const AVATAR_OPTIONS = [
 
 export const MOCK_USER: User = {
     id: 'user-1',
-    name: 'VibeSeeker',
+    name: '',
     username: '@vibeseeker',
     avatar: AVATAR_OPTIONS[0],
-    email: 'vibeseeker@email.com',
-    joinDate: '2024年6月',
-    phoneNumber: '0912345678',
+    email: '',
+    joinDate: '',
+    phoneNumber: '',
 };
 
 export const MY_CLOSET: ClothingItem[] = [
-  {
-    id: 'my-item-1',
-    userId: MOCK_USER.id,
-    userName: MOCK_USER.name,
-    userAvatar: MOCK_USER.avatar,
-    imageUrls: ['https://picsum.photos/seed/mycloset1/400/600', 'https://picsum.photos/seed/mycloset1-2/400/600'],
-    category: '連身裙',
-    color: '花卉',
-    style_tags: ['波西米亞風', '夏季', '休閒'],
-    description: '一件輕盈的夏季連身裙，非常適合海灘出遊或悠閒的午後。',
-    estimatedPrice: 800,
-  },
-  {
-    id: 'my-item-2',
-    userId: MOCK_USER.id,
-    userName: MOCK_USER.name,
-    userAvatar: MOCK_USER.avatar,
-    imageUrls: ['https://picsum.photos/seed/mycloset2/400/600'],
-    category: '夾克',
-    color: '丹寧',
-    style_tags: ['街頭風', '90年代', '寬鬆'],
-     description: '一件復古風格的寬鬆丹寧夾克，百搭實穿。',
-     estimatedPrice: 1200,
-  }
+
 ];
 
 export const INITIAL_DECK: ClothingItem[] = [
@@ -135,69 +112,13 @@ export const INITIAL_MATCHES: Match[] = [
 ];
 
 export const INITIAL_TRANSACTIONS: Transaction[] = [
-    {
-        id: 'txn-initial-1',
-        matchId: 'match-initial-1',
-        status: 'ongoing',
-        parties: {
-            'user-1': { // Our mock user
-                phoneNumber: '0912345678',
-                pickupMethod: '7-11',
-                pickupLocation: '台北南港門市'
-            }
-            // user-2 has not submitted their details yet
-        }
-    }
 ];
 
 export const INITIAL_LIKED_ITEMS: LikedItem[] = [
-    {
-        id: 'like-1',
-        item: INITIAL_DECK[1], // RetroKid's T-Shirt
-        status: 'pending',
-    },
-    {
-        id: 'like-3',
-        item: INITIAL_DECK[3], // UrbanExplorer's Hoodie
-        status: 'rejected', // Simulating a rejection
-    },
 ];
 
 const USER_3_CLOSET: ClothingItem[] = [
-    INITIAL_DECK[1], // Their T-shirt
-    {
-        id: 'user-3-item-2',
-        userId: 'user-3',
-        userName: 'RetroKid',
-        userAvatar: 'https://picsum.photos/seed/user3/100/100',
-        imageUrls: ['https://picsum.photos/seed/user3closet2/400/600'],
-        category: '短褲',
-        color: '水洗藍',
-        style_tags: ['復古', '丹寧', '夏季'],
-        description: '一條高腰水洗丹寧短褲，非常適合搭配圖案T恤。',
-        estimatedPrice: 500,
-    }
 ];
 
 export const INITIAL_REQUESTS: Request[] = [
-    {
-        id: 'req-1',
-        requester: {
-            id: 'user-3',
-            name: 'RetroKid',
-            avatar: 'https://picsum.photos/seed/user3/100/100',
-            closet: USER_3_CLOSET
-        },
-        itemOfInterest: MY_CLOSET[0] // My floral dress
-    },
-    {
-        id: 'req-2',
-        requester: {
-            id: 'user-5',
-            name: 'UrbanExplorer',
-            avatar: 'https://picsum.photos/seed/user5/100/100',
-            closet: [INITIAL_DECK[3]] // Just their hoodie
-        },
-        itemOfInterest: MY_CLOSET[1] // My denim jacket
-    }
 ];

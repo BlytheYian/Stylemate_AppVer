@@ -37,12 +37,26 @@
       "FIREBASE_APP_ID": "1:903619554394:web:ce1fa8871bf1fe6e52bc63",
       "FIREBASE_MEASUREMENT_ID": "G-SGYZSQ7V0B",
       "GOOGLE_WEB_CLIENT_ID": "903619554394-khaak47vjhrbegl3brq51vgojsjuvbni.apps.googleusercontent.com",
-      "GOOGLE_ANDROID_CLIENT_ID": "903619554394-7j4lqb0ado7uiapp070g6v0lslrao29i.apps.googleusercontent.com",
-      "GOOGLE_IOS_CLIENT_ID": ""
+      "GOOGLE_ANDROID_CLIENT_ID": "903619554394-sj17ng0arcavvf6g1d3ijasdv8pq89jt.apps.googleusercontent.com",
+      "GOOGLE_IOS_CLIENT_ID": "",
+      "eas": {
+        "projectId": "ceebb34e-b5f3-41c1-b63b-7feebd5af663"
+      }
     },
     "plugins": [
       "expo-web-browser",
-      "expo-build-properties"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "androidGradlePluginVersion": "8.5.2",
+            "gradleCommand": "8.5",
+          "compileSdkVersion": 36,
+          "targetSdkVersion": 35,
+            "kotlinVersion": "2.1.20"
+          }
+        }
+      ]
     ]
   }
 }

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "903619554394",
+    "project_id": "stylemate-e534e",
+    "storage_bucket": "stylemate-e534e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:903619554394:android:600f754ac9ea230352bc63",
+        "android_client_info": {
+          "package_name": "Style.mate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "903619554394-khaak47vjhrbegl3brq51vgojsjuvbni.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBY8sYg2VVs9k5brUYUJKPmCZ4mAWnvS9w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "903619554394-7j4lqb0ado7uiapp070g6v0lslrao29i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
