@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
-import { SparklesIcon } from './Icons';
+import { TheIconSmall } from './Icons';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseAuthUser } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
@@ -79,7 +79,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   return (
     <View style={styles.container}>
       <View style={styles.titleContainer}>
-        <SparklesIcon width={48} height={48} color="#F472B6" style={styles.logoIcon} />
+        <TheIconSmall width={72} height={72} color="#F472B6" style={styles.logoIcon} />
         <Text style={styles.title}>Stylemate</Text>
       </View>
       <Text style={styles.subtitle}>交換您的風格，找到您的 Style。</Text>

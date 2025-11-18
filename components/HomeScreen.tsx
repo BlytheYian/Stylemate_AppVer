@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Match } from '../types';
-import { SparklesIcon, ChevronRightIcon } from './Icons';
+import { SparklesIcon, ChevronRightIcon ,TheIcon } from './Icons';
 
 interface HomeScreenProps {
   matches: Match[];
@@ -14,7 +14,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ matches, onStartSwiping, onOpen
   return (
     <View style={styles.container}>
       <View style={styles.heroContainer}>
-        <SparklesIcon width={96} height={96} color="#F472B6" />
+        <TheIcon width={96} height={96} color="#F472B6" />
         <Text style={styles.title}>歡迎來到 Stylemate</Text>
         <Text style={styles.subtitle}>透過交換您喜愛的衣物，發現新風格。</Text>
         <TouchableOpacity

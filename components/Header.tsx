@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { UserCircleIcon, ArrowUpTrayIcon, SparklesIcon, ArrowUturnLeftIcon } from './Icons';
+import { UserCircleIcon, ArrowUpTrayIcon, SparklesIcon, ArrowUturnLeftIcon ,TheIconSmall } from './Icons';
 
 interface HeaderProps {
   onUploadClick: () => void;
@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ onUploadClick, onProfileClick, showBack
       </View>
       
       <View style={styles.titleContainer}>
-        <SparklesIcon width={24} height={24} color="#F472B6" style={{marginRight: 8}} />
+        <TheIconSmall width={36} height={36} color="#F472B6" style={{marginRight: 8}} />
         <Text style={styles.title}>Stylemate</Text>
       </View>
 

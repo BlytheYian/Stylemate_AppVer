@@ -1,22 +1,20 @@
 {
-  "name": "stylemate-test",
+  "name": "stylemate-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "web": "expo start --web"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
-    "@react-native-google-signin/google-signin": "^16.0.0",
-    "@react-native-picker/picker": "2.11.1",
+    "dotenv": "^17.2.3",
     "expo": "~54.0.23",
     "expo-auth-session": "~7.0.8",
-    "expo-build-properties": "~1.0.9",
+    "expo-build-properties": "^1.0.9",
     "expo-constants": "~18.0.10",
     "expo-image-picker": "~17.0.8",
     "expo-linear-gradient": "^15.0.7",
@@ -25,14 +23,12 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-svg": "15.12.1"
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-svg": "^15.12.1"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
     "@types/react": "~19.1.10",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.9.2",
-    "vite": "^6.2.0"
+    "@types/react-native": "^0.73.0",
+    "typescript": "~5.9.2"
   }
 }

@@ -40,7 +40,7 @@ const AccountScreen: React.FC<AccountScreenProps> = ({ user, onBack, onEdit }) =
             </View>
              <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>完成交換</Text>
-                <Text style={styles.detailValue}>2</Text>
+                <Text style={styles.detailValue}>0</Text>
             </View>
         </View>
         

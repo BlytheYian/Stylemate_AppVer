@@ -1,18 +1,29 @@
-import { GoogleGenAI, Type } from "@google/genai";
+// services/geminiService.ts
 
-// The fileToBase64 function is removed as it relies on the Web FileReader API.
-// In React Native, a library like react-native-image-picker or expo-image-picker
-// can provide the base64 string directly.
+import { GoogleGenAI, Type } from "@google/genai";
+import Constants from 'expo-constants'; // 👈 關鍵：匯入 Constants
+
+/**
+ * 讀取我們在 app.config.js 'extra' 欄位中設定的環境變數
+ */
+const getEnvVariable = (varName: string): string => {
+    // 檢查 app.config.js 的 "extra" 欄位
+    const key = Constants.expoConfig?.extra?.[varName];
+
+    if (typeof key === 'string') {
+        return key;
+    }
+    
+    // 如果找不到，拋出一個明確的錯誤
+    throw new Error(`環境變數 ${varName} 未在 app.config.js 的 'extra' 欄位中設定。`);
+};
 
 export const generateClothingTags = async (base64Image: string, mimeType: string): Promise<{ category: string; color: string; style_tags: string[]; estimatedPrice: number; }> => {
-    try {
-        // 【已修改】讀取 Expo 的環境變數 (必須以 EXPO_PUBLIC_ 開頭)
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+    
+    try {
+        // 👇 關鍵：使用 Constants 讀取金鑰，而不是 process.env
+        const apiKey = getEnvVariable('EXPO_PUBLIC_GEMINI_API_KEY');
 
-        if (!apiKey) {
-            throw new Error("API_KEY environment variable is not set in .env file.");
-        }
-        // 【已修改】使用變數初始化
         const ai = new GoogleGenAI({ apiKey: apiKey });
 
         const imagePart = {
@@ -27,7 +38,7 @@ export const generateClothingTags = async (base64Image: string, mimeType: string
         };
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.5-flash-lite",
             contents: { parts: [imagePart, textPart] },
             config: {
                 responseMimeType: "application/json",
@@ -54,6 +65,7 @@ export const generateClothingTags = async (base64Image: string, mimeType: string
 
     } catch (error) {
         console.error("Error generating clothing tags:", error);
-        throw new Error("AI圖片分析失敗，請重試。");
+        // 拋出原始錯誤，這樣我們才能在 Alert 中看到它
+        throw error; 
     }
 };
