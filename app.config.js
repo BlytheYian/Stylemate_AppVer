@@ -20,7 +20,7 @@ export default { // 👈 2. 將所有內容包在 'export default' 中
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,

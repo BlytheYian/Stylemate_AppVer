@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { UserCircleIcon, ArrowUpTrayIcon, SparklesIcon, ArrowUturnLeftIcon ,TheIconSmall } from './Icons';
+import { UserCircleIcon, ArrowUpTrayIcon, SparklesIcon, ArrowUturnLeftIcon , TheIconSmall } from './Icons';
 
 interface HeaderProps {
   onUploadClick: () => void;
